@@ -1,0 +1,10 @@
+# Telefonbuch igonre files
+
+node_modules/
+.env
+*.log
+coverage/
+dist/
+build/
+.DS_Store
+Thumbs.db
