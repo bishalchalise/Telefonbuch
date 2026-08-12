@@ -11,7 +11,11 @@ mongoose.connect(url, { family: 4 })
     .catch(error => console.log('error connecting to database....', error.message))
 
 const contactSchema = new mongoose.Schema({
-    name: String,
+    name: {
+        type: String,
+        required: true,
+        minLength: 3,
+    },
     number: String,
 })
 
