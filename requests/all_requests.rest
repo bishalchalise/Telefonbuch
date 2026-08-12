@@ -12,6 +12,21 @@ POST http://localhost:3001/api/persons
 Content-Type: application/json
 
 {
-"name": "MAcf", 
+"name": "mylove", 
 "number": "32312121"
 }
+
+###
+PUT http://localhost:3001/api/persons/6a7c1cfce74326bdee4f65e3
+Content-Type: application/json
+
+{
+"name":"Harish Chandra Neupane",
+"number":"2398091232"
+}
+###
+GET http://localhost:3001/api/persons
+
+###
+GET http://localhost:3001/info
+

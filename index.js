@@ -7,20 +7,30 @@ require('dotenv').config()
 app.use(express.json())
 app.use(express.static('dist'))
 
+//morgan log
 morgan.token("body", (req) => {
     return JSON.stringify(req.body);
 });
 
+
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :body'))
 
-app.get('/info', (request, response) => {
-    response.send(
-        `<div>
-        <p>Phonebook has info for ${persons.length} people</p>
-        <p> ${new Date()}
-        </div>`
-    )
+//get info
+app.get('/info', (request, response, next) => {
+
+    Contact.countDocuments()
+        .then(count => {
+            response.send(
+                `<div>
+                     <p>Phonebook has info for ${count} people</p>
+                      <p> ${new Date()}
+                 </div>`
+            )
+        })
+        .catch(error => next(error));
 })
+
+//get all
 
 app.get('/api/persons', (request, response) => {
     Contact.find({}).then(persons => {
@@ -28,7 +38,8 @@ app.get('/api/persons', (request, response) => {
     })
 })
 
-app.get('/api/persons/:id', (request, response) => {
+//get by id
+app.get('/api/persons/:id', (request, response, next) => {
     Contact.findById(request.params.id)
         .then(person => {
             if (person) {
@@ -39,29 +50,19 @@ app.get('/api/persons/:id', (request, response) => {
                     .status(404).end()
             }
         })
-        .catch(error => {
-            console.log('Error', error.message)
-            response
-                .status(500)
-                .send({ error: 'Malformatted id' })
-        })
+        .catch(error => next(error))
 })
 
-app.delete('/api/persons/:id', (request, response) => {
+//delete method 
+
+app.delete('/api/persons/:id', (request, response, next) => {
     const id = request.params.id
-    Contact.findByIdAndDelete(id)
-
-
-    const selectedPerson = persons.find(person => person.id === id)
-    console.log(selectedPerson)
-    if (selectedPerson) {
-        persons = persons.filter(person => person.id !== id)
-        response.status(204).json({ message: 'Success' })
-    }
-    else {
-        response.status(404).json({ error: 'Not Found' })
-    }
+    Contact.findByIdAndDelete(id).then(result => {
+        response.status(204).end()
+    }).catch(error => next(error))
 })
+
+//post method
 app.post('/api/persons', (request, response) => {
     const body = request.body
 
@@ -90,11 +91,45 @@ app.post('/api/persons', (request, response) => {
         })
     }
 })
+
+//put/edit method
+
+app.put('/api/persons/:id', (request, response, next) => {
+    Contact.findById(request.params.id)
+        .then(
+            person => {
+                if (!person) {
+                    return response.status(404).end()
+                }
+                person.name = request.body.name
+                person.number = request.body.number
+
+                person.save().then((updatedPerson) => {
+                    response.json(updatedPerson)
+                })
+            })
+        .catch(error => next(error))
+})
+
+//unknown endpoint
 const unknownEndpoint = (request, response) => {
     response.status(404).send({ error: 'unknown endpoint' })
 }
 
 app.use(unknownEndpoint)
+
+//error handler
+const errorHandler = (error, request, response, next) => {
+    console.error(error.message)
+
+    if (error.name === 'CastError') {
+        return response.status(400).send({ error: 'malformatted id' })
+    }
+
+    next(error)
+}
+// this has to be the last loaded middleware, also all the routes should be registered before this!
+app.use(errorHandler)
 
 const PORT = process.env.PORT
 
